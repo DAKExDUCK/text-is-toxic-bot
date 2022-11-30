@@ -4,15 +4,17 @@ from functools import wraps
 from aiogram import types
 
 
-logging.basicConfig(filename="logs.log",
-                    filemode="w",
-                    format="%(asctime)s - %(levelname)s - %(message)s",
-                    datefmt='%d/%m %H:%M:%S',
-                    level=logging.INFO)
+logging.basicConfig(
+    # filename="logs.log",
+    # filemode="w",
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt='%d/%m %H:%M:%S',
+    level=logging.INFO
+)
 logger = logging.getLogger()
 
 
-def print_msg(func):
+def log_msg(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         message: types.Message = args[0]

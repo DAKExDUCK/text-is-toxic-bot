@@ -1,40 +1,75 @@
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 
-from ...logger import logger, print_msg
+from config import isToxic
+from ..functions.functions import clear_MD
+
+from ...logger import log_msg, logger
 from ..keyboards.default import add_delete_button
 
 
-@print_msg
+@log_msg
 async def start(message: types.Message, state: FSMContext):
     text = "Start message"
     await message.reply(text, reply_markup=add_delete_button())
     await state.finish()
 
 
-@print_msg
 async def help(message: types.Message):
     text = "Help message"
     await message.reply(text, reply_markup=add_delete_button())
 
 
-async def delete_msg(query: types.CallbackQuery):
+async def is_toxic(message: types.Message):
+    is_toxic = isToxic.is_toxic(message.reply_to_message.text)
+
+    if is_toxic:
+        text = "*YES*"
+    else:
+        text = "nope"
+
+    await message.reply_to_message.reply(text)
+
+
+async def get_toxicity_probab(message: types.Message):
+    toxicity = isToxic.toxicity_probab_of(message.reply_to_message.text)
+    
+    text = f"Toxicity probability: *{clear_MD(round(toxicity, 2)*100)}%*"
+    await message.reply_to_message.reply(text)
+
+
+async def delete_msg(message: types.Message):
     try:
-        await query.bot.delete_message(query.message.chat.id, query.message.message_id)
-        if query.message.reply_to_message:
-            await query.bot.delete_message(query.message.chat.id, query.message.reply_to_message.message_id)
-        await query.answer()
-    except Exception as exc:
-        logger.error(exc)
-        await query.answer("Error")
+        await message.delete()
+    except:
+        ...
 
 
 def register_handlers_default(dp: Dispatcher):
     dp.register_message_handler(start, commands="start", state="*")
     dp.register_message_handler(help, commands="help", state="*")
 
-    dp.register_callback_query_handler(
-        delete_msg,
-        lambda c: c.data == "delete",
+    dp.register_message_handler(
+        is_toxic, 
+        lambda msg: msg.reply_to_message,
+        commands="is_toxic",
         state="*"
     )
+    dp.register_message_handler(
+        delete_msg, 
+        commands="is_toxic",
+        state="*"
+    )
+
+    dp.register_message_handler(
+        get_toxicity_probab, 
+        lambda msg: msg.reply_to_message,
+        commands="get_toxicity_probab",
+        state="*"
+    )
+    dp.register_message_handler(
+        delete_msg, 
+        commands="get_toxicity_probab",
+        state="*"
+    )
+
