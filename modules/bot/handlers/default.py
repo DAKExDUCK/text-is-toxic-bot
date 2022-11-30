@@ -1,10 +1,11 @@
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
+from langdetect import detect
 
 from config import isToxic
-from ..functions.functions import clear_MD
 
 from ...logger import log_msg, logger
+from ..functions.functions import clear_MD
 from ..keyboards.default import add_delete_button
 
 
@@ -21,21 +22,26 @@ async def help(message: types.Message):
 
 
 async def is_toxic(message: types.Message):
-    is_toxic = isToxic.is_toxic(message.reply_to_message.text)
+    text_to = message.reply_to_message.text or message.reply_to_message.caption
+    if detect(text_to) == "ru":
+        is_toxic = isToxic.is_toxic(text_to)
 
-    if is_toxic:
-        text = "*YES*"
-    else:
-        text = "nope"
+        if is_toxic:
+            text = "*YES*"
+        else:
+            text = "nope"
 
-    await message.reply_to_message.reply(text)
+        await message.reply_to_message.reply(text)
 
 
 async def get_toxicity_probab(message: types.Message):
-    toxicity = isToxic.toxicity_probab_of(message.reply_to_message.text)
-    
-    text = f"Toxicity probability: *{clear_MD(round(toxicity, 2)*100)}%*"
-    await message.reply_to_message.reply(text)
+    text_to = message.reply_to_message.text or message.reply_to_message.caption
+
+    if detect(text_to) == "ru":
+        toxicity = isToxic.toxicity_probab_of(text_to)
+
+        text = f"Toxicity probability: *{clear_MD(round(toxicity, 2)*100)}%*"
+        await message.reply_to_message.reply(text)
 
 
 async def delete_msg(message: types.Message):
@@ -52,6 +58,7 @@ def register_handlers_default(dp: Dispatcher):
     dp.register_message_handler(
         is_toxic, 
         lambda msg: msg.reply_to_message,
+        lambda msg: msg.reply_to_message.text or msg.reply_to_message.caption,
         commands="is_toxic",
         state="*"
     )
@@ -64,6 +71,7 @@ def register_handlers_default(dp: Dispatcher):
     dp.register_message_handler(
         get_toxicity_probab, 
         lambda msg: msg.reply_to_message,
+        lambda msg: msg.reply_to_message.text or msg.reply_to_message.caption,
         commands="get_toxicity_probab",
         state="*"
     )
